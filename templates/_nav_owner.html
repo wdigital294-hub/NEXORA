@@ -1,0 +1,6 @@
+<a href="{{ url_for('owner.dashboard') }}" class="{{ 'activo' if request.endpoint == 'owner.dashboard' }}">Visão geral</a>
+<a href="{{ url_for('owner.businesses') }}" class="{{ 'activo' if 'business' in request.endpoint }}">Empresas</a>
+<a href="{{ url_for('owner.payments') }}" class="{{ 'activo' if 'payment' in request.endpoint }}">Pagamentos</a>
+<a href="{{ url_for('owner.plans') }}" class="{{ 'activo' if 'plan' in request.endpoint }}">Planos</a>
+<a href="{{ url_for('owner.reports') }}" class="{{ 'activo' if request.endpoint == 'owner.reports' }}">Relatórios</a>
+<a href="{{ url_for('owner.settings') }}" class="{{ 'activo' if request.endpoint == 'owner.settings' }}">Plataforma</a>

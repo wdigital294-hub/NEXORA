@@ -1,0 +1,24 @@
+{% extends "base_admin.html" %}
+{% block nav %}{% include "_nav_owner.html" %}{% endblock %}
+{% block content %}
+<h1>Dados de cobrança da plataforma</h1>
+<p class="mudo pequeno">É isto que as empresas vêem quando vão pagar a assinatura.</p>
+<div class="cartao" style="max-width:620px">
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="campo"><label for="payment_instructions">Instruções de pagamento</label>
+      <textarea id="payment_instructions" name="payment_instructions">{{ valores.get('payment_instructions','') }}</textarea></div>
+    <div class="grelha-form">
+      <div class="campo"><label for="bank_name">Banco</label>
+        <input id="bank_name" name="bank_name" value="{{ valores.get('bank_name','') }}"></div>
+      <div class="campo"><label for="bank_holder">Titular</label>
+        <input id="bank_holder" name="bank_holder" value="{{ valores.get('bank_holder','') }}"></div>
+    </div>
+    <div class="campo"><label for="bank_iban">IBAN</label>
+      <input id="bank_iban" name="bank_iban" value="{{ valores.get('bank_iban','') }}"></div>
+    <div class="campo"><label for="support_whatsapp">WhatsApp de apoio</label>
+      <input id="support_whatsapp" name="support_whatsapp" value="{{ valores.get('support_whatsapp','') }}"></div>
+    <button class="btn">Guardar</button>
+  </form>
+</div>
+{% endblock %}

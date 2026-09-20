@@ -1,0 +1,61 @@
+{% extends "base_admin.html" %}
+{% block nav %}{% include "_nav_business.html" %}{% endblock %}
+{% block content %}
+<h1>{{ 'Editar produto' if produto else 'Novo produto' }}</h1>
+<div class="cartao" style="max-width:640px">
+  <form method="post" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="campo">
+      <label for="name">Nome</label>
+      <input id="name" name="name" required value="{{ produto.name if produto else '' }}">
+    </div>
+    <div class="campo">
+      <label for="description">Descrição</label>
+      <textarea id="description" name="description">{{ produto.description if produto else '' }}</textarea>
+    </div>
+    <div class="grelha-form">
+      <div class="campo">
+        <label for="price">Preço</label>
+        <input id="price" name="price" inputmode="decimal"
+               value="{{ '%d' % (produto.price_cents // 100) if produto else '' }}"
+               placeholder="5000">
+        <div class="ajuda">Em Kz. Use vírgula só para cêntimos.</div>
+      </div>
+      <div class="campo">
+        <label for="category_id">Categoria</label>
+        <select id="category_id" name="category_id">
+          <option value="">Sem categoria</option>
+          {% for c in categorias %}
+            <option value="{{ c.id }}" {{ 'selected' if produto and produto.category_id == c.id }}>{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="campo">
+      <label for="image">Fotografia</label>
+      <input id="image" name="image" type="file" accept="image/*" capture="environment">
+      <div class="ajuda">JPG, PNG ou WEBP até 6 MB. No telemóvel pode usar a câmara.</div>
+      {% if produto and produto.image %}
+        <img src="{{ url_for('public.uploaded_file', rel_path=produto.image) }}" alt=""
+             style="width:130px;border-radius:10px;margin-top:.6rem">
+      {% endif %}
+    </div>
+    <div class="grelha-form">
+      <div class="campo">
+        <label for="position">Ordem</label>
+        <input id="position" name="position" type="number" value="{{ produto.position if produto else 0 }}">
+      </div>
+      <div class="campo" style="align-self:end">
+        <label class="checkbox">
+          <input type="checkbox" name="available" {{ 'checked' if not produto or produto.available }}>
+          Disponível no catálogo
+        </label>
+      </div>
+    </div>
+    <div class="linha-flex">
+      <button class="btn">{{ 'Guardar alterações' if produto else 'Adicionar produto' }}</button>
+      <a class="btn btn-linha" href="{{ url_for('business.products') }}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

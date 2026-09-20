@@ -1,0 +1,38 @@
+{% extends "base_admin.html" %}
+{% block nav %}{% include "_nav_business.html" %}{% endblock %}
+{% block content %}
+<h1>QR Code</h1>
+<p class="mudo pequeno">Imprima e coloque nas mesas, no balcão ou na montra.</p>
+
+<div class="cartao centro" style="max-width:420px">
+  {% if qr_disponivel %}
+    <img src="{{ url_for('business.qrcode_png') }}" alt="QR Code de {{ business.name }}"
+         style="width:260px;margin:0 auto">
+    <div class="linha-flex" style="justify-content:center;margin-top:1rem">
+      <a class="btn" href="{{ url_for('business.qrcode_png') }}" download>Descarregar PNG</a>
+      <button class="btn btn-linha" onclick="window.print()">Imprimir</button>
+    </div>
+  {% else %}
+    <div class="aviso aviso-warning" style="border-radius:8px;text-align:left">
+      A geração de QR Code precisa da biblioteca <code>qrcode</code>.
+      Instale com <code>pip install "qrcode[pil]"</code> e recarregue esta página.
+      O link abaixo já funciona e pode ser convertido em QR Code noutro serviço.
+    </div>
+  {% endif %}
+
+  <p class="pequeno" style="margin-top:1rem;word-break:break-all">
+    <a href="{{ link }}" target="_blank">{{ link }}</a></p>
+  <button class="btn btn-linha btn-pq" id="copiar" data-link="{{ link }}">Copiar link</button>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById('copiar').onclick = function () {
+  var btn = this;
+  navigator.clipboard.writeText(btn.dataset.link).then(function () {
+    btn.textContent = 'Link copiado';
+    setTimeout(function () { btn.textContent = 'Copiar link'; }, 2000);
+  });
+};
+</script>
+{% endblock %}

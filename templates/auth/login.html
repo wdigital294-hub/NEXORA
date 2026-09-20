@@ -1,0 +1,26 @@
+{% extends "base_public.html" %}
+{% block title %}Entrar — NEXORA{% endblock %}
+{% block body %}
+<div class="wrap" style="max-width:400px;padding-top:4rem">
+  <div class="centro" style="font-weight:700;letter-spacing:.14em;margin-bottom:1.5rem">
+    NEX<span style="color:var(--ouro)">ORA</span></div>
+  <div class="cartao">
+    <h1 style="font-size:1.35rem">Entrar</h1>
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="campo">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" value="{{ email }}" required autocomplete="email">
+      </div>
+      <div class="campo">
+        <label for="password">Palavra-passe</label>
+        <input id="password" name="password" type="password" required autocomplete="current-password">
+      </div>
+      <button class="btn btn-bloco">Entrar</button>
+    </form>
+  </div>
+  <p class="centro pequeno" style="margin-top:1rem">
+    Ainda não tem conta? <a href="{{ url_for('auth.register') }}">Registe o seu negócio</a>
+  </p>
+</div>
+{% endblock %}

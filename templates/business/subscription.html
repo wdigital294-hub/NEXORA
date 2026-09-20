@@ -1,0 +1,74 @@
+{% extends "base_admin.html" %}
+{% block nav %}{% include "_nav_business.html" %}{% endblock %}
+{% block content %}
+<h1>Assinatura</h1>
+
+<div class="cartao" style="max-width:660px">
+  <div class="espaco">
+    <div>
+      <div class="pequeno mudo">Plano actual</div>
+      <div style="font-size:1.3rem;font-weight:700">{{ sub.plan_name if sub and sub.plan_name else 'Sem plano' }}</div>
+    </div>
+    <span class="etiqueta {{ 'etiqueta-ok' if estado == 'active' else 'etiqueta-aviso' if estado == 'pending' else 'etiqueta-erro' }}">
+      {{ {'active':'Activa','pending':'Por activar','expired':'Expirada','suspended':'Suspensa','cancelled':'Cancelada'}.get(estado, estado) }}
+    </span>
+  </div>
+  {% if sub and sub.end_date %}
+    <p class="pequeno" style="margin-top:.8rem">
+      Válida até <strong>{{ fmt_date(sub.end_date) }}</strong>
+      {% if dias is not none and dias >= 0 %}({{ dias }} dia(s)){% endif %}
+    </p>
+  {% endif %}
+  {% if estado != 'active' %}
+    <p class="pequeno mudo">Os seus produtos, pedidos e definições continuam guardados. O catálogo público volta a abrir assim que o pagamento for aprovado.</p>
+  {% endif %}
+</div>
+
+<h2 style="margin-top:2rem">Activar ou renovar</h2>
+<div class="cartao" style="max-width:660px">
+  <div class="aviso" style="border-radius:8px;margin-bottom:1rem">
+    {{ dados_nexora.get('payment_instructions', '') }}<br>
+    <strong>{{ dados_nexora.get('bank_name','') }}</strong> ·
+    {{ dados_nexora.get('bank_holder','') }} ·
+    {{ dados_nexora.get('bank_iban','') }}
+  </div>
+  <form method="post" action="{{ url_for('business.send_proof') }}" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="campo"><label for="plan_id">Plano</label>
+      <select id="plan_id" name="plan_id" required>
+        {% for p in planos %}
+          <option value="{{ p.id }}">{{ p.name }} — {{ fmt_money(p.price_cents) }} / {{ p.duration_days }} dias</option>
+        {% endfor %}
+      </select></div>
+    <div class="grelha-form">
+      <div class="campo"><label for="method">Como pagou</label>
+        <input id="method" name="method" placeholder="Transferência bancária"></div>
+      <div class="campo"><label for="reference">Referência</label>
+        <input id="reference" name="reference" placeholder="Nº da operação"></div>
+    </div>
+    <div class="campo"><label for="proof">Comprovativo</label>
+      <input id="proof" name="proof" type="file" accept="image/*" capture="environment">
+      <div class="ajuda">Fotografia ou captura do talão.</div></div>
+    <button class="btn">Enviar comprovativo</button>
+  </form>
+</div>
+
+{% if pagamentos %}
+<h2 style="margin-top:2rem">Histórico</h2>
+<div class="tabela-envolve">
+  <table>
+    <tr><th>Data</th><th>Valor</th><th>Método</th><th>Estado</th><th>Nota</th></tr>
+    {% for p in pagamentos %}
+    <tr>
+      <td>{{ p.created_at[:10] }}</td>
+      <td>{{ fmt_money(p.amount_cents) }}</td>
+      <td class="pequeno">{{ p.method or '—' }}</td>
+      <td><span class="etiqueta {{ 'etiqueta-ok' if p.status=='approved' else 'etiqueta-erro' if p.status=='rejected' else 'etiqueta-aviso' }}">
+        {{ {'approved':'Aprovado','rejected':'Rejeitado','pending':'Em verificação'}.get(p.status, p.status) }}</span></td>
+      <td class="pequeno mudo">{{ p.notes or '' }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+{% endblock %}

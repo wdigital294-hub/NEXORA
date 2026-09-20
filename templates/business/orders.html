@@ -1,0 +1,41 @@
+{% extends "base_admin.html" %}
+{% block nav %}{% include "_nav_business.html" %}{% endblock %}
+{% block content %}
+<h1>Pedidos</h1>
+<div class="linha-flex" style="margin-bottom:1rem">
+  {% set filtros = [('', 'Todos'), ('new','Novos'), ('confirmed','Confirmados'), ('preparing','Em preparação'), ('delivered','Entregues'), ('cancelled','Cancelados')] %}
+  {% for valor, rotulo in filtros %}
+    <a class="chip {{ 'activo' if estado == valor }}"
+       href="{{ url_for('business.orders', estado=valor) }}">{{ rotulo }}</a>
+  {% endfor %}
+</div>
+
+{% if pedidos %}
+<div class="tabela-envolve">
+  <table>
+    <tr><th>Código</th><th>Cliente</th><th>Mesa</th><th>Total</th><th>Estado</th><th></th></tr>
+    {% for p in pedidos %}
+    <tr>
+      <td><strong>{{ p.code }}</strong><div class="pequeno mudo">{{ p.created_at[:16]|replace('T',' ') }}</div></td>
+      <td>{{ p.customer_name or '—' }}</td>
+      <td>{{ p.table_number or '—' }}</td>
+      <td>{{ fmt_money(p.total_cents) }}</td>
+      <td>
+        <form method="post" action="{{ url_for('business.order_status', order_id=p.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <select name="status" onchange="this.form.submit()" style="max-width:150px">
+            {% for s in ['new','confirmed','preparing','delivered','cancelled'] %}
+              <option value="{{ s }}" {{ 'selected' if p.status == s }}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </form>
+      </td>
+      <td><a href="{{ url_for('business.order_detail', order_id=p.id) }}">Abrir</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% else %}
+<div class="vazio"><strong>Nenhum pedido neste filtro</strong></div>
+{% endif %}
+{% endblock %}

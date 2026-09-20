@@ -1,0 +1,49 @@
+{% extends "base_admin.html" %}
+{% block nav %}{% include "_nav_owner.html" %}{% endblock %}
+{% block content %}
+<h1>Planos</h1>
+<p class="mudo pequeno">Alterar o preço de um plano não muda as assinaturas já activas — só os pagamentos seguintes.</p>
+
+<div class="cartao" style="margin-bottom:1.5rem;max-width:760px">
+  <form method="post" class="grelha-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="campo"><label for="name">Nome</label><input id="name" name="name" required></div>
+    <div class="campo"><label for="price">Preço (Kz)</label><input id="price" name="price" inputmode="decimal"></div>
+    <div class="campo"><label for="duration_days">Duração (dias)</label>
+      <input id="duration_days" name="duration_days" type="number" value="30"></div>
+    <div class="campo"><label for="max_products">Limite de produtos</label>
+      <input id="max_products" name="max_products" type="number" value="0">
+      <div class="ajuda">0 = sem limite.</div></div>
+    <div class="campo" style="grid-column:1/-1"><label for="features">O que inclui</label>
+      <textarea id="features" name="features" style="min-height:70px" placeholder="Uma linha por item"></textarea></div>
+    <div style="grid-column:1/-1"><button class="btn">Criar plano</button></div>
+  </form>
+</div>
+
+<div class="grelha grelha-2">
+  {% for p in planos %}
+  <div class="cartao">
+    <form method="post" action="{{ url_for('owner.plan_edit', plan_id=p.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="campo"><label>Nome</label><input name="name" value="{{ p.name }}"></div>
+      <div class="grelha-form">
+        <div class="campo"><label>Preço (Kz)</label>
+          <input name="price" value="{{ '%d' % (p.price_cents // 100) }}" inputmode="decimal"></div>
+        <div class="campo"><label>Dias</label>
+          <input name="duration_days" type="number" value="{{ p.duration_days }}"></div>
+        <div class="campo"><label>Limite produtos</label>
+          <input name="max_products" type="number" value="{{ p.max_products }}"></div>
+        <div class="campo"><label>Estado</label>
+          <select name="status">
+            <option value="active" {{ 'selected' if p.status=='active' }}>Activo</option>
+            <option value="inactive" {{ 'selected' if p.status!='active' }}>Inactivo</option>
+          </select></div>
+      </div>
+      <div class="campo"><label>O que inclui</label>
+        <textarea name="features" style="min-height:70px">{{ p.features or '' }}</textarea></div>
+      <button class="btn btn-pq btn-linha">Guardar</button>
+    </form>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,7 @@
+<a href="{{ url_for('business.dashboard') }}" class="{{ 'activo' if request.endpoint == 'business.dashboard' }}">Painel</a>
+<a href="{{ url_for('business.products') }}" class="{{ 'activo' if 'product' in request.endpoint }}">Produtos</a>
+<a href="{{ url_for('business.categories') }}" class="{{ 'activo' if 'categor' in request.endpoint }}">Categorias</a>
+<a href="{{ url_for('business.orders') }}" class="{{ 'activo' if 'order' in request.endpoint }}">Pedidos</a>
+<a href="{{ url_for('business.qrcode_page') }}" class="{{ 'activo' if 'qrcode' in request.endpoint }}">QR Code</a>
+<a href="{{ url_for('business.settings') }}" class="{{ 'activo' if request.endpoint == 'business.settings' }}">Definições</a>
+<a href="{{ url_for('business.subscription') }}" class="{{ 'activo' if 'subscription' in request.endpoint }}">Assinatura</a>

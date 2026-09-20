@@ -1,0 +1,9 @@
+{% extends "base_public.html" %}
+{% block title %}{{ business.name }}{% endblock %}
+{% block body %}
+<div class="wrap" style="max-width:480px;padding-top:5rem;text-align:center">
+  <h1>{{ business.name }}</h1>
+  <p class="mudo">Este catálogo está temporariamente indisponível.</p>
+  {% if business.phone %}<p>Contacto directo: <strong>{{ business.phone }}</strong></p>{% endif %}
+</div>
+{% endblock %}

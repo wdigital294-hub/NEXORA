@@ -1,0 +1,49 @@
+{% extends "base_admin.html" %}
+{% block nav %}{% include "_nav_owner.html" %}{% endblock %}
+{% block content %}
+<h1>Pagamentos de assinatura</h1>
+<div class="linha-flex" style="margin-bottom:1rem">
+  {% for v, r in [('pending','Por verificar'), ('approved','Aprovados'), ('rejected','Rejeitados'), ('todos','Todos')] %}
+    <a class="chip {{ 'activo' if estado == v }}" href="{{ url_for('owner.payments', estado=v) }}">{{ r }}</a>
+  {% endfor %}
+</div>
+
+{% if pagamentos %}
+<div class="tabela-envolve">
+  <table>
+    <tr><th>Empresa</th><th>Plano</th><th>Valor</th><th>Referência</th><th>Comprovativo</th><th>Decisão</th></tr>
+    {% for p in pagamentos %}
+    <tr>
+      <td><a href="{{ url_for('owner.business_detail', bid=p.business_id) }}">{{ p.business_name }}</a>
+        <div class="pequeno mudo">{{ p.created_at[:10] }}</div></td>
+      <td class="pequeno">{{ p.plan_name or '—' }}</td>
+      <td>{{ fmt_money(p.amount_cents) }}</td>
+      <td class="pequeno mudo">{{ p.reference or '—' }}<br>{{ p.method or '' }}</td>
+      <td>{% if p.proof_image %}
+          <a href="{{ url_for('public.uploaded_file', rel_path=p.proof_image) }}" target="_blank">
+            <img src="{{ url_for('public.uploaded_file', rel_path=p.proof_image) }}" alt="Comprovativo"
+                 style="width:60px;border-radius:6px"></a>
+          {% else %}<span class="mudo">Sem imagem</span>{% endif %}</td>
+      <td>
+        {% if p.status == 'pending' %}
+        <form method="post" action="{{ url_for('owner.payment_decide', pid=p.id) }}" class="stack">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input name="notes" placeholder="Observação" class="pequeno">
+          <div class="linha-flex">
+            <button class="btn btn-pq" name="decisao" value="aprovar">Aprovar e activar</button>
+            <button class="btn btn-pq btn-perigo" name="decisao" value="rejeitar">Rejeitar</button>
+          </div>
+        </form>
+        {% else %}
+          <span class="etiqueta {{ 'etiqueta-ok' if p.status=='approved' else 'etiqueta-erro' }}">{{ p.status }}</span>
+          {% if p.notes %}<div class="pequeno mudo">{{ p.notes }}</div>{% endif %}
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% else %}
+<div class="vazio"><strong>Nada neste filtro</strong></div>
+{% endif %}
+{% endblock %}

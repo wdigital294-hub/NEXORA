@@ -1,0 +1,63 @@
+{% extends "base_admin.html" %}
+{% block nav %}{% include "_nav_business.html" %}{% endblock %}
+{% block content %}
+<div class="cabecalho-pagina espaco">
+  <div>
+    <h1>{{ g.business.name }}</h1>
+    <p class="mudo pequeno" style="margin:0">
+      Catálogo em <a href="{{ url_for('public.menu', slug=g.business.slug) }}" target="_blank">/menu/{{ g.business.slug }}</a>
+    </p>
+  </div>
+  <a class="btn btn-linha" href="{{ url_for('business.qrcode_page') }}">QR Code</a>
+</div>
+
+{% if g.sub_state != 'active' %}
+<div class="aviso aviso-warning" style="border-radius:8px;margin-bottom:1rem">
+  O catálogo público está fechado porque a assinatura está
+  {{ {'pending':'por activar','expired':'expirada','suspended':'suspensa','cancelled':'cancelada'}.get(g.sub_state, g.sub_state) }}.
+  Os seus produtos e pedidos continuam guardados.
+  <a href="{{ url_for('business.subscription') }}">Resolver agora</a>.
+</div>
+{% elif g.sub_days is not none and g.sub_days <= 5 %}
+<div class="aviso aviso-warning" style="border-radius:8px;margin-bottom:1rem">
+  A assinatura termina em {{ g.sub_days }} dia(s).
+  <a href="{{ url_for('business.subscription') }}">Renovar</a>.
+</div>
+{% endif %}
+
+<div class="grelha grelha-4">
+  <div class="cartao"><div class="numero">{{ stats.pedidos_novos }}</div><div class="pequeno mudo">Pedidos por atender</div></div>
+  <div class="cartao"><div class="numero">{{ stats.pedidos_total }}</div><div class="pequeno mudo">Pedidos no total</div></div>
+  <div class="cartao"><div class="numero">{{ stats.produtos }}</div><div class="pequeno mudo">Produtos</div></div>
+  <div class="cartao"><div class="numero">{{ stats.categorias }}</div><div class="pequeno mudo">Categorias</div></div>
+</div>
+
+<div class="cartao" style="margin-top:1rem">
+  <div class="pequeno mudo">Valor dos pedidos entregues</div>
+  <div class="numero">{{ fmt_money(receita) }}</div>
+</div>
+
+<h2 style="margin-top:2rem">Últimos pedidos</h2>
+{% if recentes %}
+<div class="tabela-envolve">
+  <table>
+    <tr><th>Código</th><th>Cliente</th><th>Total</th><th>Estado</th><th></th></tr>
+    {% for p in recentes %}
+    <tr>
+      <td><strong>{{ p.code }}</strong></td>
+      <td>{{ p.customer_name or '—' }}{% if p.table_number %} <span class="etiqueta">Mesa {{ p.table_number }}</span>{% endif %}</td>
+      <td>{{ fmt_money(p.total_cents) }}</td>
+      <td><span class="etiqueta {{ 'etiqueta-aviso' if p.status == 'new' else 'etiqueta-ok' }}">{{ p.status }}</span></td>
+      <td><a href="{{ url_for('business.order_detail', order_id=p.id) }}">Abrir</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% else %}
+<div class="vazio">
+  <strong>Ainda não recebeu pedidos</strong>
+  <p class="pequeno">Adicione produtos e imprima o QR Code para começar.</p>
+  <a class="btn btn-pq" href="{{ url_for('business.product_form') }}">Adicionar produto</a>
+</div>
+{% endif %}
+{% endblock %}

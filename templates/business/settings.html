@@ -1,0 +1,76 @@
+{% extends "base_admin.html" %}
+{% block nav %}{% include "_nav_business.html" %}{% endblock %}
+{% block content %}
+<h1>Definições</h1>
+
+<div class="cartao" style="max-width:660px">
+  <form method="post" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="campo"><label for="name">Nome do negócio</label>
+      <input id="name" name="name" value="{{ business.name }}" required></div>
+
+    <div class="campo"><label for="slug">Endereço do catálogo</label>
+      <input id="slug" name="slug" value="{{ business.slug }}">
+      <div class="ajuda">O catálogo fica em /menu/{{ business.slug }}. Se mudar, os QR Codes já impressos deixam de funcionar.</div>
+    </div>
+
+    <div class="campo"><label for="description">Descrição</label>
+      <textarea id="description" name="description">{{ business.description or '' }}</textarea></div>
+
+    <div class="grelha-form">
+      <div class="campo"><label for="whatsapp">WhatsApp para pedidos</label>
+        <input id="whatsapp" name="whatsapp" value="{{ business.whatsapp or '' }}" placeholder="244923000000">
+        <div class="ajuda">Com indicativo do país, só dígitos.</div></div>
+      <div class="campo"><label for="phone">Telefone</label>
+        <input id="phone" name="phone" value="{{ business.phone or '' }}"></div>
+    </div>
+
+    <div class="campo"><label for="address">Morada</label>
+      <input id="address" name="address" value="{{ business.address or '' }}"></div>
+    <div class="campo"><label for="opening_hours">Horário</label>
+      <input id="opening_hours" name="opening_hours" value="{{ business.opening_hours or '' }}"
+             placeholder="Seg a Sáb, 09h00 – 22h00"></div>
+
+    <div class="grelha-form">
+      <div class="campo"><label for="logo">Logótipo</label>
+        <input id="logo" name="logo" type="file" accept="image/*">
+        {% if business.logo %}<img src="{{ url_for('public.uploaded_file', rel_path=business.logo) }}"
+             alt="" style="width:76px;border-radius:10px;margin-top:.5rem">{% endif %}</div>
+      <div class="campo"><label for="cover">Imagem de capa</label>
+        <input id="cover" name="cover" type="file" accept="image/*">
+        {% if business.cover %}<img src="{{ url_for('public.uploaded_file', rel_path=business.cover) }}"
+             alt="" style="width:150px;border-radius:10px;margin-top:.5rem">{% endif %}</div>
+    </div>
+    <button class="btn">Guardar definições</button>
+  </form>
+</div>
+
+<h2 style="margin-top:2rem">Métodos de pagamento aceites</h2>
+<p class="mudo pequeno">Aparecem ao cliente no fim do pedido. O dinheiro é pago directamente a si.</p>
+<div class="cartao" style="max-width:660px">
+  <form method="post" action="{{ url_for('business.payment_method_add') }}" class="grelha-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="campo"><label for="pm-name">Método</label>
+      <input id="pm-name" name="name" placeholder="Multicaixa Express" required></div>
+    <div class="campo"><label for="pm-details">Detalhes</label>
+      <input id="pm-details" name="details" placeholder="923 000 000"></div>
+    <div style="grid-column:1/-1"><button class="btn btn-linha">Adicionar método</button></div>
+  </form>
+
+  {% if metodos %}
+  <table style="margin-top:1rem">
+    {% for m in metodos %}
+    <tr>
+      <td><strong>{{ m.name }}</strong><div class="pequeno mudo">{{ m.details or '' }}</div></td>
+      <td style="text-align:right">
+        <form method="post" action="{{ url_for('business.payment_method_delete', pm_id=m.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-pq btn-perigo">Remover</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

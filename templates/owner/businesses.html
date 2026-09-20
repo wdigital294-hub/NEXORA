@@ -1,0 +1,37 @@
+{% extends "base_admin.html" %}
+{% block nav %}{% include "_nav_owner.html" %}{% endblock %}
+{% block content %}
+<div class="cabecalho-pagina espaco">
+  <h1>Empresas</h1>
+  <a class="btn" href="{{ url_for('owner.business_new') }}">Registar empresa</a>
+</div>
+
+<form method="get" class="linha-flex" style="margin-bottom:1rem">
+  <input name="q" value="{{ termo }}" placeholder="Procurar por nome ou endereço" style="max-width:300px">
+  <button class="btn btn-linha btn-pq">Procurar</button>
+</form>
+
+{% if dados %}
+<div class="tabela-envolve">
+  <table>
+    <tr><th>Empresa</th><th>Catálogo</th><th>Plano</th><th>Assinatura</th><th>Conta</th><th></th></tr>
+    {% for d in dados %}
+    <tr>
+      <td><strong>{{ d.b.name }}</strong></td>
+      <td class="pequeno"><a href="{{ url_for('public.menu', slug=d.b.slug) }}" target="_blank">/menu/{{ d.b.slug }}</a></td>
+      <td class="pequeno">{{ d.sub.plan_name if d.sub and d.sub.plan_name else '—' }}</td>
+      <td>
+        <span class="etiqueta {{ 'etiqueta-ok' if d.estado=='active' else 'etiqueta-erro' if d.estado=='expired' else 'etiqueta-aviso' }}">
+          {{ {'active':'Activa','pending':'Por activar','expired':'Expirada','suspended':'Suspensa','cancelled':'Cancelada'}.get(d.estado, d.estado) }}</span>
+        {% if d.sub and d.sub.end_date %}<div class="pequeno mudo">até {{ fmt_date(d.sub.end_date) }}</div>{% endif %}
+      </td>
+      <td><span class="etiqueta {{ 'etiqueta-ok' if d.b.status=='active' else 'etiqueta-erro' }}">{{ d.b.status }}</span></td>
+      <td><a href="{{ url_for('owner.business_detail', bid=d.b.id) }}">Abrir</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% else %}
+<div class="vazio"><strong>Nenhuma empresa encontrada</strong></div>
+{% endif %}
+{% endblock %}

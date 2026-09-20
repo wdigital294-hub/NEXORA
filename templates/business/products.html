@@ -1,0 +1,61 @@
+{% extends "base_admin.html" %}
+{% block nav %}{% include "_nav_business.html" %}{% endblock %}
+{% block content %}
+<div class="cabecalho-pagina espaco">
+  <h1>Produtos</h1>
+  <a class="btn" href="{{ url_for('business.product_form') }}">Adicionar produto</a>
+</div>
+
+<form method="get" class="linha-flex" style="margin-bottom:1rem">
+  <input name="q" value="{{ termo }}" placeholder="Procurar por nome" style="max-width:280px">
+  <button class="btn btn-linha btn-pq">Procurar</button>
+  {% if termo %}<a class="pequeno" href="{{ url_for('business.products') }}">Limpar</a>{% endif %}
+</form>
+
+{% if produtos %}
+<div class="tabela-envolve">
+  <table>
+    <tr><th></th><th>Produto</th><th>Categoria</th><th>Preço</th><th>Estado</th><th></th></tr>
+    {% for p in produtos %}
+    <tr>
+      <td style="width:56px">
+        {% if p.image %}
+          <img src="{{ url_for('public.uploaded_file', rel_path=p.image) }}" alt=""
+               style="width:44px;height:44px;object-fit:cover;border-radius:8px">
+        {% else %}
+          <div style="width:44px;height:44px;border-radius:8px;background:var(--verde-fundo);
+                      display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--verde)">
+            {{ p.name[0]|upper }}</div>
+        {% endif %}
+      </td>
+      <td><strong>{{ p.name }}</strong></td>
+      <td class="pequeno mudo">{{ p.category_name or 'Sem categoria' }}</td>
+      <td>{{ fmt_money(p.price_cents) }}</td>
+      <td>
+        {% if p.available %}<span class="etiqueta etiqueta-ok">Disponível</span>
+        {% else %}<span class="etiqueta">Esgotado</span>{% endif %}
+      </td>
+      <td class="linha-flex">
+        <a class="btn btn-pq btn-linha" href="{{ url_for('business.product_form', prod_id=p.id) }}">Editar</a>
+        <form method="post" action="{{ url_for('business.product_toggle', prod_id=p.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-pq btn-linha">{{ 'Marcar esgotado' if p.available else 'Repor' }}</button>
+        </form>
+        <form method="post" action="{{ url_for('business.product_delete', prod_id=p.id) }}"
+              onsubmit="return confirm('Eliminar {{ p.name }}?')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-pq btn-perigo">Eliminar</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% else %}
+<div class="vazio">
+  <strong>{{ 'Nada encontrado' if termo else 'Ainda não há produtos' }}</strong>
+  <p class="pequeno">{{ 'Tente outro termo.' if termo else 'O catálogo só abre quando tiver produtos.' }}</p>
+  <a class="btn btn-pq" href="{{ url_for('business.product_form') }}">Adicionar produto</a>
+</div>
+{% endif %}
+{% endblock %}

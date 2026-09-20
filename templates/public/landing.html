@@ -1,0 +1,33 @@
+{% extends "base_public.html" %}
+{% block title %}NEXORA — uma plataforma, vários negócios{% endblock %}
+{% block body %}
+<div class="wrap" style="max-width:720px;padding-top:3.5rem;padding-bottom:4rem">
+  <div style="font-weight:700;letter-spacing:.14em;font-size:1.1rem">NEX<span style="color:var(--ouro)">ORA</span></div>
+  <h1 style="font-size:2.3rem;margin-top:1.5rem;max-width:16ch">O seu menu, num código impresso na mesa.</h1>
+  <p class="mudo" style="max-width:52ch">
+    O cliente aponta a câmara, vê os produtos com fotografia e preço, monta o pedido
+    e envia-o para o WhatsApp do seu negócio. Sem instalar nada, sem criar conta.
+  </p>
+  <div class="linha-flex" style="margin-top:1.5rem">
+    <a class="btn" href="{{ url_for('auth.register') }}">Criar o meu catálogo</a>
+    <a class="btn btn-linha" href="{{ url_for('auth.login') }}">Entrar</a>
+  </div>
+
+  <div class="grelha grelha-2" style="margin-top:3rem">
+    <div class="cartao">
+      <h3>Cada negócio no seu espaço</h3>
+      <p class="pequeno mudo" style="margin:0">Produtos, pedidos, WhatsApp e QR Code próprios.
+      Os dados de um negócio nunca aparecem no catálogo de outro.</p>
+    </div>
+    <div class="cartao">
+      <h3>O dinheiro é seu</h3>
+      <p class="pequeno mudo" style="margin:0">O cliente paga-lhe directamente, pelo método que
+      escolher. A NEXORA cobra apenas a assinatura mensal.</p>
+    </div>
+  </div>
+
+  <p class="pequeno mudo" style="margin-top:2.5rem">
+    {{ total_empresas }} negócio(s) registado(s) nesta instalação.
+  </p>
+</div>
+{% endblock %}

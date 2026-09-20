@@ -1,0 +1,45 @@
+{% extends "base_admin.html" %}
+{% block nav %}{% include "_nav_business.html" %}{% endblock %}
+{% block content %}
+<h1>Categorias</h1>
+<p class="mudo pequeno">A ordem define como as secções aparecem no catálogo. Menor número aparece primeiro.</p>
+
+<div class="cartao" style="margin-bottom:1.5rem">
+  <form method="post" class="grelha-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="campo"><label for="name">Nome</label><input id="name" name="name" required placeholder="Bebidas"></div>
+    <div class="campo"><label for="position">Ordem</label><input id="position" name="position" type="number" value="0"></div>
+    <div style="grid-column:1/-1"><button class="btn">Criar categoria</button></div>
+  </form>
+</div>
+
+{% if categorias %}
+<div class="tabela-envolve">
+  <table>
+    <tr><th>Categoria</th><th>Produtos</th><th>Ordem</th><th></th></tr>
+    {% for c in categorias %}
+    <tr>
+      <td>
+        <form method="post" action="{{ url_for('business.category_edit', cat_id=c.id) }}" class="linha-flex" id="f{{ c.id }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input name="name" value="{{ c.name }}" style="max-width:220px">
+      </td>
+      <td>{{ c.n_produtos }}</td>
+      <td><input name="position" type="number" value="{{ c.position }}" style="max-width:80px"></td>
+      <td class="linha-flex">
+          <button class="btn btn-pq btn-linha">Guardar</button>
+        </form>
+        <form method="post" action="{{ url_for('business.category_delete', cat_id=c.id) }}"
+              onsubmit="return confirm('Eliminar a categoria {{ c.name }}? Os produtos ficam sem categoria.')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-pq btn-perigo">Eliminar</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% else %}
+<div class="vazio"><strong>Sem categorias</strong><p class="pequeno">Crie a primeira acima.</p></div>
+{% endif %}
+{% endblock %}

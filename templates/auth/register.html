@@ -1,0 +1,51 @@
+{% extends "base_public.html" %}
+{% block title %}Registar negócio — NEXORA{% endblock %}
+{% block body %}
+<div class="wrap" style="max-width:520px;padding-top:3rem;padding-bottom:3rem">
+  <h1>Registar o seu negócio</h1>
+  <p class="mudo pequeno">Cria o catálogo agora. Publica-o assim que a assinatura estiver activa.</p>
+  <div class="cartao">
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="campo">
+        <label for="business_name">Nome do negócio</label>
+        <input id="business_name" name="business_name" value="{{ form.get('business_name','') }}" required>
+      </div>
+      <div class="grelha-form">
+        <div class="campo">
+          <label for="name">O seu nome</label>
+          <input id="name" name="name" value="{{ form.get('name','') }}" required>
+        </div>
+        <div class="campo">
+          <label for="whatsapp">WhatsApp do negócio</label>
+          <input id="whatsapp" name="whatsapp" value="{{ form.get('whatsapp','') }}"
+                 placeholder="244923000000" inputmode="tel">
+          <div class="ajuda">Com indicativo do país, só dígitos.</div>
+        </div>
+      </div>
+      <div class="campo">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" value="{{ form.get('email','') }}" required>
+      </div>
+      <div class="campo">
+        <label for="password">Palavra-passe</label>
+        <input id="password" name="password" type="password" required minlength="8">
+        <div class="ajuda">Mínimo 8 caracteres.</div>
+      </div>
+      {% if planos %}
+      <div class="campo">
+        <label for="plan_id">Plano pretendido</label>
+        <select id="plan_id" name="plan_id">
+          {% for p in planos %}
+            <option value="{{ p.id }}">{{ p.name }} — {{ fmt_money(p.price_cents) }}/mês</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+      <button class="btn btn-bloco">Criar conta</button>
+    </form>
+  </div>
+  <p class="centro pequeno" style="margin-top:1rem">
+    Já tem conta? <a href="{{ url_for('auth.login') }}">Entrar</a></p>
+</div>
+{% endblock %}

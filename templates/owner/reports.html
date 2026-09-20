@@ -1,0 +1,38 @@
+{% extends "base_admin.html" %}
+{% block nav %}{% include "_nav_owner.html" %}{% endblock %}
+{% block content %}
+<h1>Relatórios</h1>
+
+<h2 style="margin-top:1.5rem">Receita por mês</h2>
+<div class="tabela-envolve">
+  <table>
+    <tr><th>Mês</th><th>Pagamentos</th><th>Total</th></tr>
+    {% for m in por_mes %}
+      <tr><td>{{ m.mes }}</td><td>{{ m.n }}</td><td>{{ fmt_money(m.total) }}</td></tr>
+    {% else %}
+      <tr><td colspan="3" class="mudo">Sem pagamentos aprovados.</td></tr>
+    {% endfor %}
+  </table>
+</div>
+
+<h2 style="margin-top:2rem">Receita por empresa</h2>
+<div class="tabela-envolve">
+  <table>
+    <tr><th>Empresa</th><th>Pagamentos</th><th>Total</th></tr>
+    {% for e in por_empresa %}
+      <tr><td>{{ e.name }}</td><td>{{ e.n }}</td><td>{{ fmt_money(e.total) }}</td></tr>
+    {% endfor %}
+  </table>
+</div>
+
+<h2 style="margin-top:2rem">Actividade dos catálogos</h2>
+<p class="mudo pequeno">Volume de pedidos que passou por cada catálogo. Este dinheiro é das empresas, não da plataforma.</p>
+<div class="tabela-envolve">
+  <table>
+    <tr><th>Empresa</th><th>Pedidos</th><th>Volume</th></tr>
+    {% for e in pedidos %}
+      <tr><td>{{ e.name }}</td><td>{{ e.n }}</td><td>{{ fmt_money(e.volume) }}</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

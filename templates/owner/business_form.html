@@ -1,0 +1,31 @@
+{% extends "base_admin.html" %}
+{% block nav %}{% include "_nav_owner.html" %}{% endblock %}
+{% block content %}
+<h1>Registar empresa</h1>
+<p class="mudo pequeno">Cria a empresa e a conta do gestor. Comunique-lhe a palavra-passe por um canal seguro.</p>
+<div class="cartao" style="max-width:620px">
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="campo"><label for="name">Nome do negócio</label><input id="name" name="name" required></div>
+    <div class="grelha-form">
+      <div class="campo"><label for="slug">Endereço do catálogo</label>
+        <input id="slug" name="slug" placeholder="gerado a partir do nome">
+        <div class="ajuda">Deixe vazio para gerar automaticamente.</div></div>
+      <div class="campo"><label for="whatsapp">WhatsApp</label><input id="whatsapp" name="whatsapp"></div>
+    </div>
+    <div class="campo"><label for="manager">Nome do gestor</label><input id="manager" name="manager"></div>
+    <div class="grelha-form">
+      <div class="campo"><label for="email">Email de acesso</label>
+        <input id="email" name="email" type="email" required></div>
+      <div class="campo"><label for="password">Palavra-passe inicial</label>
+        <input id="password" name="password" type="password" required minlength="8"></div>
+    </div>
+    <div class="campo"><label for="plan_id">Activar já com o plano</label>
+      <select id="plan_id" name="plan_id">
+        <option value="">Deixar por activar</option>
+        {% for p in planos %}<option value="{{ p.id }}">{{ p.name }} — {{ fmt_money(p.price_cents) }}</option>{% endfor %}
+      </select></div>
+    <button class="btn">Registar empresa</button>
+  </form>
+</div>
+{% endblock %}

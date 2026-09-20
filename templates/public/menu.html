@@ -1,0 +1,167 @@
+{% extends "base_public.html" %}
+{% block title %}{{ business.name }}{% endblock %}
+{% block head %}
+<meta name="description" content="{{ business.description or business.name }}">
+{% endblock %}
+
+{% macro cartao_produto(p) %}
+<article class="produto" data-id="{{ p.id }}" data-nome="{{ p.name }}"
+         data-preco="{{ p.price_cents }}">
+  {% if p.image %}
+    <img class="produto-img" src="{{ url_for('public.uploaded_file', rel_path=p.image) }}"
+         alt="{{ p.name }}" loading="lazy">
+  {% else %}
+    <div class="produto-img-vazia" aria-hidden="true">{{ p.name[0] | upper }}</div>
+  {% endif %}
+  <div class="produto-corpo">
+    <div class="produto-nome">{{ p.name }}</div>
+    {% if p.description %}<div class="produto-desc">{{ p.description }}</div>{% endif %}
+    <div class="produto-preco">{{ fmt_money(p.price_cents) }}</div>
+    <div class="qtd" style="margin-top:.55rem">
+      <button type="button" data-acao="menos" aria-label="Retirar um {{ p.name }}">−</button>
+      <span class="valor" data-valor>0</span>
+      <button type="button" data-acao="mais" aria-label="Juntar um {{ p.name }}">+</button>
+    </div>
+  </div>
+</article>
+{% endmacro %}
+
+{% block body %}
+<header class="capa">
+  {% if business.cover %}
+    <img src="{{ url_for('public.uploaded_file', rel_path=business.cover) }}" alt="">
+  {% else %}
+    <div class="capa-vazia"></div>
+  {% endif %}
+</header>
+
+<div class="identidade">
+  {% if business.logo %}
+    <img class="logo" src="{{ url_for('public.uploaded_file', rel_path=business.logo) }}"
+         alt="{{ business.name }}">
+  {% else %}
+    <div class="logo logo-vazio">{{ business.name[0] | upper }}</div>
+  {% endif %}
+  <h1 style="margin-top:.7rem">{{ business.name }}</h1>
+  {% if business.description %}<p class="mudo">{{ business.description }}</p>{% endif %}
+  <p class="pequeno mudo">
+    {% if business.opening_hours %}{{ business.opening_hours }}{% endif %}
+    {% if business.address %}<br>{{ business.address }}{% endif %}
+  </p>
+</div>
+
+{% if categorias %}
+<div class="barra-categorias">
+  <div class="chips">
+    {% for c in categorias %}
+      {% if por_categoria[c.id] %}
+        <a class="chip" href="#cat-{{ c.id }}">{{ c.name }}</a>
+      {% endif %}
+    {% endfor %}
+    {% if sem_categoria %}<a class="chip" href="#cat-outros">Outros</a>{% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div class="catalogo">
+  {% if total_produtos == 0 %}
+    <div class="vazio">
+      <h3>Ainda não há produtos publicados</h3>
+      <p class="pequeno">Volte dentro de momentos.</p>
+    </div>
+  {% endif %}
+
+  {% for c in categorias %}
+    {% if por_categoria[c.id] %}
+      <section id="cat-{{ c.id }}" style="scroll-margin-top:72px;margin-bottom:2rem">
+        <h2 style="margin:1.4rem 0 .8rem">{{ c.name }}</h2>
+        {% if c.description %}<p class="pequeno mudo">{{ c.description }}</p>{% endif %}
+        <div class="grelha-produtos">
+          {% for p in por_categoria[c.id] %}{{ cartao_produto(p) }}{% endfor %}
+        </div>
+      </section>
+    {% endif %}
+  {% endfor %}
+
+  {% if sem_categoria %}
+    <section id="cat-outros" style="scroll-margin-top:72px;margin-bottom:2rem">
+      <h2 style="margin:1.4rem 0 .8rem">Outros</h2>
+      <div class="grelha-produtos">
+        {% for p in sem_categoria %}{{ cartao_produto(p) }}{% endfor %}
+      </div>
+    </section>
+  {% endif %}
+</div>
+
+<!-- Barra fixa do carrinho -->
+<div class="barra-carrinho" id="barra">
+  <div class="interior">
+    <div>
+      <div class="pequeno" id="barra-itens">0 itens</div>
+      <strong id="barra-total">0 Kz</strong>
+    </div>
+    <button class="btn" type="button" id="abrir-carrinho">Ver pedido</button>
+  </div>
+</div>
+
+<!-- Folha do carrinho e finalização -->
+<div class="folha" id="folha" role="dialog" aria-modal="true" aria-label="O seu pedido">
+  <div class="folha-fundo" data-fechar></div>
+  <div class="folha-painel">
+    <div class="espaco">
+      <h2>O seu pedido</h2>
+      <button class="btn btn-linha btn-pq" type="button" data-fechar>Fechar</button>
+    </div>
+
+    <div id="lista-carrinho"></div>
+
+    <div class="total"><span>Total</span><span id="total-carrinho">0 Kz</span></div>
+
+    <div class="cartao stack" style="margin-top:.5rem">
+      <div class="campo">
+        <label for="f-nome">O seu nome</label>
+        <input id="f-nome" maxlength="80" autocomplete="name">
+      </div>
+      <div class="grelha-form">
+        <div class="campo">
+          <label for="f-mesa">Mesa (se estiver no local)</label>
+          <input id="f-mesa" maxlength="20" inputmode="numeric">
+        </div>
+        <div class="campo">
+          <label for="f-telefone">Telefone</label>
+          <input id="f-telefone" maxlength="30" inputmode="tel" autocomplete="tel">
+        </div>
+      </div>
+      {% if metodos %}
+      <div class="campo">
+        <label for="f-pagamento">Como vai pagar</label>
+        <select id="f-pagamento">
+          {% for m in metodos %}
+            <option value="{{ m.name }}">{{ m.name }}{% if m.details %} — {{ m.details }}{% endif %}</option>
+          {% endfor %}
+        </select>
+        <div class="ajuda">O pagamento é feito directamente ao estabelecimento.</div>
+      </div>
+      {% endif %}
+      <div class="campo">
+        <label for="f-obs">Observação</label>
+        <textarea id="f-obs" maxlength="400" style="min-height:70px"
+                  placeholder="Sem picante, embalar para levar..."></textarea>
+      </div>
+      <button class="btn btn-bloco" type="button" id="enviar">Enviar pedido por WhatsApp</button>
+      <div class="pequeno mudo centro" id="estado-envio"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.NEXORA = {
+    endpointPedido: "{{ url_for('public.create_order', slug=business.slug) }}",
+    moeda: "Kz",
+    temWhatsapp: {{ 'true' if business.whatsapp else 'false' }}
+  };
+</script>
+<script src="{{ url_for('static', filename='js/cart.js') }}"></script>
+{% endblock %}

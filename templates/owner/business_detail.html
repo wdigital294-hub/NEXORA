@@ -1,0 +1,72 @@
+{% extends "base_admin.html" %}
+{% block nav %}{% include "_nav_owner.html" %}{% endblock %}
+{% block content %}
+<p class="pequeno"><a href="{{ url_for('owner.businesses') }}">← Empresas</a></p>
+<div class="cabecalho-pagina espaco">
+  <div>
+    <h1>{{ b.name }}</h1>
+    <p class="pequeno mudo" style="margin:0">
+      <a href="{{ url_for('public.menu', slug=b.slug) }}" target="_blank">/menu/{{ b.slug }}</a>
+      · {{ n_produtos }} produtos · {{ n_pedidos }} pedidos</p>
+  </div>
+  <form method="post" action="{{ url_for('owner.business_status', bid=b.id) }}" class="linha-flex">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <select name="status">
+      {% for s, r in [('active','Activa'), ('suspended','Suspensa'), ('blocked','Bloqueada')] %}
+        <option value="{{ s }}" {{ 'selected' if b.status == s }}>{{ r }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn btn-pq btn-linha">Aplicar</button>
+  </form>
+</div>
+
+<div class="grelha grelha-2">
+  <div class="cartao">
+    <h3>Assinatura</h3>
+    <span class="etiqueta {{ 'etiqueta-ok' if estado=='active' else 'etiqueta-erro' if estado=='expired' else 'etiqueta-aviso' }}">{{ estado }}</span>
+    {% if subs and subs[0].end_date %}<p class="pequeno">Válida até {{ fmt_date(subs[0].end_date) }}</p>{% endif %}
+    <form method="post" action="{{ url_for('owner.business_set_plan', bid=b.id) }}" class="linha-flex" style="margin-top:.8rem">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <select name="plan_id">
+        {% for p in planos %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}
+      </select>
+      <button class="btn btn-pq">Activar / renovar</button>
+    </form>
+    <div class="ajuda">Renovar antes do fim soma os dias ao prazo actual.</div>
+  </div>
+  <div class="cartao">
+    <h3>Contas de acesso</h3>
+    {% for u in gestores %}
+      <div class="pequeno" style="padding:.3rem 0;border-bottom:1px solid var(--linha)">
+        <strong>{{ u.name }}</strong><br><span class="mudo">{{ u.email }}</span>
+      </div>
+    {% else %}<p class="pequeno mudo">Sem contas associadas.</p>{% endfor %}
+  </div>
+</div>
+
+<h2 style="margin-top:2rem">Pagamentos</h2>
+{% if pagamentos %}
+<div class="tabela-envolve">
+  <table>
+    <tr><th>Data</th><th>Valor</th><th>Comprovativo</th><th>Estado</th><th></th></tr>
+    {% for p in pagamentos %}
+    <tr>
+      <td class="pequeno">{{ p.created_at[:10] }}</td>
+      <td>{{ fmt_money(p.amount_cents) }}</td>
+      <td>{% if p.proof_image %}<a href="{{ url_for('public.uploaded_file', rel_path=p.proof_image) }}" target="_blank">Ver</a>{% else %}—{% endif %}</td>
+      <td><span class="etiqueta {{ 'etiqueta-ok' if p.status=='approved' else 'etiqueta-erro' if p.status=='rejected' else 'etiqueta-aviso' }}">{{ p.status }}</span></td>
+      <td>
+        {% if p.status == 'pending' %}
+        <form method="post" action="{{ url_for('owner.payment_decide', pid=p.id) }}" class="linha-flex">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-pq" name="decisao" value="aprovar">Aprovar</button>
+          <button class="btn btn-pq btn-perigo" name="decisao" value="rejeitar">Rejeitar</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% else %}<div class="vazio"><strong>Sem pagamentos registados</strong></div>{% endif %}
+{% endblock %}

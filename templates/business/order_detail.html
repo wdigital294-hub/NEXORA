@@ -1,0 +1,35 @@
+{% extends "base_admin.html" %}
+{% block nav %}{% include "_nav_business.html" %}{% endblock %}
+{% block content %}
+<p class="pequeno"><a href="{{ url_for('business.orders') }}">← Pedidos</a></p>
+<h1>Pedido {{ pedido.code }}</h1>
+<div class="cartao" style="max-width:600px">
+  <p class="pequeno mudo" style="margin:0">{{ pedido.created_at|replace('T',' ') }}</p>
+  <p style="margin:.4rem 0 1rem">
+    <strong>{{ pedido.customer_name or 'Cliente sem nome' }}</strong>
+    {% if pedido.table_number %}<span class="etiqueta">Mesa {{ pedido.table_number }}</span>{% endif %}
+    {% if pedido.customer_phone %}<br><span class="pequeno mudo">{{ pedido.customer_phone }}</span>{% endif %}
+  </p>
+  <table>
+    {% for i in itens %}
+    <tr>
+      <td>{{ i.quantity }}x {{ i.product_name }}<div class="pequeno mudo">{{ fmt_money(i.price_cents) }} cada</div></td>
+      <td style="text-align:right">{{ fmt_money(i.subtotal_cents) }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  <div class="total"><span>Total</span><span>{{ fmt_money(pedido.total_cents) }}</span></div>
+  {% if pedido.payment_method %}<p class="pequeno">Pagamento indicado: <strong>{{ pedido.payment_method }}</strong></p>{% endif %}
+  {% if pedido.notes %}<p class="pequeno">Observação: {{ pedido.notes }}</p>{% endif %}
+
+  <form method="post" action="{{ url_for('business.order_status', order_id=pedido.id) }}" class="linha-flex">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <select name="status">
+      {% for s in ['new','confirmed','preparing','delivered','cancelled'] %}
+        <option value="{{ s }}" {{ 'selected' if pedido.status == s }}>{{ s }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn btn-pq">Actualizar estado</button>
+  </form>
+</div>
+{% endblock %}
