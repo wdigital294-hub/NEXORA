@@ -117,7 +117,6 @@ item.qtd += delta;
     } else {
         carrinho.set(id, item);
     }
-
     totais();
     pintar();
 }
