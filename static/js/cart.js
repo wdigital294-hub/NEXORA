@@ -86,23 +86,41 @@
   }
 
   function mudar(id, delta) {
-    var card = document.querySelector('.produto[data-id="' + id + '"]');
-    var item = carrinho.get(id);
+    var numId = Number(id);
+    var item = carrinho.get(numId) || carrinho.get(id);
+
     if (!item) {
-      if (delta < 0 || !card) return;
-      item = {
-        id: id,
-        nome: card.dataset.nome,
-        preco: parseInt(card.dataset.preco, 10),
-        qtd: 0
-      };
-      carrinho.set(id, item);
+        if (delta < 0) return;
+        
+        // Tenta encontrar o elemento na página de forma flexível
+        var card = document.querySelector('.produto[data-id="' + id + '"]') || 
+                   document.querySelector('[data-id="' + id + '"]') ||
+                   document.querySelector('.produto[data-produto-id="' + id + '"]');
+                   
+        if (!card) {
+            // Se não encontrar o card visual, cria um item básico com o ID
+            item = { id: id, nome: "Produto #" + id, preco: 0, qtd: 0 };
+        } else {
+            item = {
+                id: id,
+                nome: card.dataset.nome || "Produto",
+                preco: Number(card.dataset.preco) || 0,
+                qtd: 0
+            };
+        }
     }
-    item.qtd += delta;
-    if (item.qtd < 1) carrinho.delete(id);
-    if (item.qtd > 99) item.qtd = 99;
+item.qtd += delta;
+
+    if (item.qtd <= 0) {
+        carrinho.delete(id);
+        carrinho.delete(numId);
+    } else {
+        carrinho.set(id, item);
+    }
+
+    totais();
     pintar();
-  }
+}
 
   document.querySelectorAll(".produto").forEach(function (card) {
     var id = card.dataset.id;
