@@ -119,22 +119,51 @@
     if (e.key === "Escape" && folha.classList.contains("aberta")) fechar();
   });
 
-  btnEnviar.onclick = function () {
-    if (!carrinho.size) return;
+ btnEnviar.onclick = function () {
+    if (!carrinho.size) {
+        alert("O carrinho está vazio.");
+        return;
+    }
+    
     var itens = [];
-    carrinho.forEach(function (i) { itens.push({ id: Number(i.id), qty: i.qtd }); });
+    carrinho.forEach(function (i) { 
+        itens.push({ id: Number(i.id), qty: i.qtd }); 
+    });
 
     btnEnviar.disabled = true;
     estado.textContent = "A registar o pedido...";
 
     fetch(cfg.endpointPedido, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        items: itens,
-        customer_name: valor("f-nome"),
-        customer_phone: valor("f-telefone"),
-        table_number: valor("f-mesa"),
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            itens: itens,
+            name: valor("f-nome"),
+            phone: valor("f-telefone"),
+            table: valor("f-mesa"),
+            observacao: valor("f-obs") || ""
+        })
+    })
+    .then(function (res) {
+        if (!res.ok) {
+            throw new Error("Erro ao enviar pedido");
+        }
+        return res.json();
+    })
+    .then(function (res) {
+        estado.textContent = "Pedido #" + res.code + " registado com sucesso no painel!";
+        btnEnviar.disabled = true;
+        // Limpar o carrinho e recarregar ou fechar modal após 2 segundos
+        setTimeout(function() {
+            location.reload();
+        }, 2000);
+    })
+    .catch(function (err) {
+        console.error(err);
+        estado.textContent = "Erro ao enviar. Verifique os dados e tente de novo.";
+        btnEnviar.disabled = false;
+    });
+};
         notes: valor("f-obs"),
         payment_method: valor("f-pagamento")
       })
