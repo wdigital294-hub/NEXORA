@@ -43,7 +43,8 @@
     document.querySelectorAll(".produto").forEach(function (card) {
       var id = card.dataset.id;
       var item = carrinho.get(id);
-      card.querySelector("[data-valor]").textContent = item ? item.qtd : 0;
+      var valEl = card.querySelector("[data-valor]");
+      if (valEl) valEl.textContent = item ? item.qtd : 0;
     });
 
     lista.innerHTML = "";
@@ -51,10 +52,10 @@
       lista.innerHTML =
         '<div class="vazio" style="padding:1.5rem"><strong>Carrinho vazio</strong>' +
         '<div class="pequeno">Escolha produtos no catálogo para começar.</div></div>';
-      btnEnviar.disabled = true;
+      if (btnEnviar) btnEnviar.disabled = true;
       return;
     }
-    btnEnviar.disabled = false;
+    if (btnEnviar) btnEnviar.disabled = false;
 
     carrinho.forEach(function (item) {
       var linha = document.createElement("div");
@@ -69,6 +70,7 @@
         "</div>" +
         '<div style="font-weight:700;min-width:5.5rem;text-align:right">' +
         formatar(item.qtd * item.preco) + "</div>";
+      
       linha.querySelector('[data-linha="menos"]').onclick = function () {
         mudar(item.id, -1);
       };
@@ -85,130 +87,129 @@
     return d.innerHTML;
   }
 
-  function mudar(id, delta) {
-    var numId = Number(id);
-    var item = carrinho.get(numId) || carrinho.get(id);
+  window.mudar = function (id, delta) {
+    id = String(id);
+    
+    // Tenta encontrar o elemento card correspondente para obter nome e preço se o item for novo
+    var card = document.querySelector('.produto[data-id="' + id + '"]');
+    var item = carrinho.get(id);
 
     if (!item) {
-        if (delta < 0) return;
-        
-        // Tenta encontrar o elemento na página de forma flexível
-        var card = document.querySelector('.produto[data-id="' + id + '"]') || 
-                   document.querySelector('[data-id="' + id + '"]') ||
-                   document.querySelector('.produto[data-produto-id="' + id + '"]');
-                   
-        if (!card) {
-            // Se não encontrar o card visual, cria um item básico com o ID
-            item = { id: id, nome: "Produto #" + id, preco: 0, qtd: 0 };
-        } else {
-            item = {
-                id: id,
-                nome: card.dataset.nome || "Produto",
-                preco: Number(card.dataset.preco) || 0,
-                qtd: 0
-            };
-        }
+      if (!card) return; // Se não existe card nem item, aborta
+      item = {
+        id: id,
+        nome: card.dataset.nome || "Produto",
+        preco: Number(card.dataset.preco) || 0,
+        qtd: 0
+      };
     }
-item.qtd += delta;
+
+    item.qtd += delta;
 
     if (item.qtd <= 0) {
-        carrinho.delete(id);
-        carrinho.delete(numId);
+      carrinho.delete(id);
     } else {
-        carrinho.set(id, item);
+      carrinho.set(id, item);
     }
+
     totais();
     pintar();
-}
+  };
 
-  document.querySelectorAll(".produto").forEach(function (card) {
-    var id = card.dataset.id;
-    card.querySelector('[data-acao="mais"]').onclick = function () { mudar(id, 1); };
-    card.querySelector('[data-acao="menos"]').onclick = function () { mudar(id, -1); };
-  });
-
-  function abrir() { folha.classList.add("aberta"); document.body.style.overflow = "hidden"; }
-  function fechar() { folha.classList.remove("aberta"); document.body.style.overflow = ""; }
-
-  document.getElementById("abrir-carrinho").onclick = abrir;
-  folha.querySelectorAll("[data-fechar]").forEach(function (el) { el.onclick = fechar; });
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && folha.classList.contains("aberta")) fechar();
-  });
-
- btnEnviar.onclick = function () {
-    if (!carrinho.size) {
-        alert("O carrinho está vazio.");
-        return;
+  // Delegação de eventos para os botões + e - no catálogo
+  document.addEventListener('click', function(event) {
+    var btnMais = event.target.closest('.btn-mais, [data-acao="mais"]');
+    var btnMenos = event.target.closest('.btn-menos, [data-acao="menos"]');
+    
+    if (btnMais) {
+      var card = btnMais.closest('.produto, [data-id]');
+      if (card) {
+        var id = card.dataset.id || card.getAttribute('data-id');
+        window.mudar(id, 1);
+      }
     }
     
-    var itens = [];
-    carrinho.forEach(function (i) { 
+    if (btnMenos) {
+      var card = btnMenos.closest('.produto, [data-id]');
+      if (card) {
+        var id = card.dataset.id || card.getAttribute('data-id');
+        window.mudar(id, -1);
+      }
+    }
+  });
+
+  var folhaElemento = document.getElementById("folha");
+  function abrir() { if (folhaElemento) { folhaElemento.classList.add("aberta"); document.body.style.overflow = "hidden"; } }
+  function fechar() { if (folhaElemento) { folhaElemento.classList.remove("aberta"); document.body.style.overflow = ""; } }
+
+  var btnAbrir = document.getElementById("abrir-carrinho");
+  if (btnAbrir) btnAbrir.onclick = abrir;
+  
+  if (folhaElemento) {
+    folhaElemento.querySelectorAll("[data-fechar]").forEach(function (el) { el.onclick = fechar; });
+  }
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && folhaElemento && folhaElemento.classList.contains("aberta")) fechar();
+  });
+
+  if (btnEnviar) {
+    btnEnviar.onclick = function () {
+      if (!carrinho.size) {
+        alert("O carrinho está vazio.");
+        return;
+      }
+      
+      var itens = [];
+      carrinho.forEach(function (i) { 
         itens.push({ id: Number(i.id), qty: i.qtd }); 
-    });
+      });
 
-    btnEnviar.disabled = true;
-    estado.textContent = "A registar o pedido...";
+      btnEnviar.disabled = true;
+      if (estado) estado.textContent = "A registar o pedido...";
 
-    fetch(cfg.endpointPedido, {
+      var payload = {
+        itens: itens,
+        name: valor("f-nome"),
+        phone: valor("f-telefone"),
+        table: valor("f-mesa"),
+        observacao: valor("f-obs") || "",
+        payment_method: valor("f-pagamento")
+      };
+
+      fetch(cfg.endpointPedido, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            itens: itens,
-            name: valor("f-nome"),
-            phone: valor("f-telefone"),
-            table: valor("f-mesa"),
-            observacao: valor("f-obs") || ""
-        })
-    })
-    .then(function (res) {
-        if (!res.ok) {
-            throw new Error("Erro ao enviar pedido");
-        }
-        return res.json();
-    })
-    .then(function (res) {
-        estado.textContent = "Pedido #" + res.code + " registado com sucesso no painel!";
-        btnEnviar.disabled = true;
-        // Limpar o carrinho e recarregar ou fechar modal após 2 segundos
-        setTimeout(function() {
-            location.reload();
-        }, 2000);
-    })
-    .catch(function (err) {
-        console.error(err);
-        estado.textContent = "Erro ao enviar. Verifique os dados e tente de novo.";
-        btnEnviar.disabled = false;
-    });
-};
-        notes: valor("f-obs"),
-        payment_method: valor("f-pagamento")
+        body: JSON.stringify(payload)
       })
-    })
-      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
       .then(function (res) {
-        if (!res.ok || !res.d.ok) {
-          estado.textContent = res.d.error || "Não foi possível registar o pedido.";
+        return res.json().then(function (data) {
+          return { ok: res.ok, data: data };
+        });
+      })
+      .then(function (res) {
+        if (!res.ok || (res.data.ok === false)) {
+          if (estado) estado.textContent = res.data.error || "Não foi possível registar o pedido.";
           btnEnviar.disabled = false;
           return;
         }
-        if (res.d.whatsapp_url) {
-          estado.textContent = "Pedido " + res.d.code + " registado. A abrir o WhatsApp...";
-          window.location.href = res.d.whatsapp_url;
-        } else {
-          // Sem número de WhatsApp configurado: mostramos o pedido para copiar.
-          estado.innerHTML =
-            "Pedido <strong>" + res.d.code + "</strong> registado. " +
-            "Este estabelecimento ainda não tem WhatsApp configurado — " +
-            "mostre este código no balcão.";
-          btnEnviar.disabled = true;
+
+        if (estado) {
+          estado.textContent = "Pedido #" + (res.data.code || "") + " registado com sucesso no painel!";
         }
+        btnEnviar.disabled = true;
+
+        setTimeout(function() {
+          location.reload();
+        }, 2000);
       })
-      .catch(function () {
-        estado.textContent = "Sem ligação. Verifique a internet e tente de novo.";
+      .catch(function (err) {
+        console.error(err);
+        if (estado) estado.textContent = "Erro de ligação. Verifique a internet e tente de novo.";
         btnEnviar.disabled = false;
       });
-  };
+    };
+  }
 
   function valor(id) {
     var el = document.getElementById(id);

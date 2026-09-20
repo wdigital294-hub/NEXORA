@@ -5,11 +5,9 @@
 {% endblock %}
 
 {% macro cartao_produto(p) %}
-<article class="produto" data-id="{{ p.id }}" data-nome="{{ p.name }}"
-         data-preco="{{ p.price_cents }}">
+<article class="produto" data-id="{{ p.id }}" data-nome="{{ p.name }}" data-preco="{{ p.price_cents }}">
   {% if p.image %}
-    <img class="produto-img" src="{{ url_for('public.uploaded_file', rel_path=p.image) }}"
-         alt="{{ p.name }}" loading="lazy">
+    <img class="produto-img" src="{{ url_for('public.uploaded_file', rel_path=p.image) }}" alt="{{ p.name }}" loading="lazy">
   {% else %}
     <div class="produto-img-vazia" aria-hidden="true">{{ p.name[0] | upper }}</div>
   {% endif %}
@@ -17,10 +15,12 @@
     <div class="produto-nome">{{ p.name }}</div>
     {% if p.description %}<div class="produto-desc">{{ p.description }}</div>{% endif %}
     <div class="produto-preco">{{ fmt_money(p.price_cents) }}</div>
-    <div class="qtd" style="margin-top:.55rem">
-      <button type="button" data-acao="menos" aria-label="Retirar um {{ p.name }}">−</button>
-      <span class="valor" data-valor>0</span>
-      <button type="button" data-acao="mais" aria-label="Juntar um {{ p.name }}">+</button>
+    
+    <!-- Controlo de Quantidade Blindado e Alinhado -->
+    <div class="qtd" style="margin-top:.55rem; display: flex; align-items: center; gap: 8px;">
+      <button type="button" data-acao="menos" aria-label="Retirar um {{ p.name }}" style="cursor: pointer; padding: 4px 10px;">−</button>
+      <span class="valor" data-valor style="font-weight: bold; min-width: 20px; text-align: center;">0</span>
+      <button type="button" data-acao="mais" aria-label="Juntar um {{ p.name }}" style="cursor: pointer; padding: 4px 10px;">+</button>
     </div>
   </div>
 </article>
@@ -37,8 +37,7 @@
 
 <div class="identidade">
   {% if business.logo %}
-    <img class="logo" src="{{ url_for('public.uploaded_file', rel_path=business.logo) }}"
-         alt="{{ business.name }}">
+    <img class="logo" src="{{ url_for('public.uploaded_file', rel_path=business.logo) }}" alt="{{ business.name }}">
   {% else %}
     <div class="logo logo-vazio">{{ business.name[0] | upper }}</div>
   {% endif %}
@@ -148,7 +147,7 @@
         <textarea id="f-obs" maxlength="400" style="min-height:70px"
                   placeholder="Sem picante, embalar para levar..."></textarea>
       </div>
-      <button class="btn btn-bloco" type="button" id="enviar">Enviar pedido por WhatsApp</button>
+      <button class="btn btn-bloco" type="button" id="enviar">Enviar Pedido</button>
       <div class="pequeno mudo centro" id="estado-envio"></div>
     </div>
   </div>
