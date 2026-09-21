@@ -1,14 +1,31 @@
 /* Carrinho do catálogo público.
- *
- * O carrinho vive só no navegador. Os preços aqui servem apenas para
- * mostrar o total ao cliente — quem decide quanto custa é o servidor,
- * que recalcula tudo a partir da base de dados ao receber o pedido.
+ * O carrinho agora persiste no localStorage para evitar perdas de dados em refreshes ou falhas.
  */
 (function () {
   "use strict";
 
   var cfg = window.NEXORA || {};
-  var carrinho = new Map(); // id -> {id, nome, preco, qtd}
+  
+  // Chave única para armazenamento local do carrinho
+  var STORAGE_KEY = "nexora_carrinho_data";
+
+  // Inicializa o Map a partir do localStorage (se existir)
+  var carrinho = new Map();
+  try {
+    var salvo = localStorage.getItem(STORAGE_KEY);
+    if (salvo) {
+      var arrSalvo = JSON.parse(salvo);
+      if (Array.isArray(arrSalvo)) {
+        arrSalvo.forEach(function (item) {
+          if (item && item.id) {
+            carrinho.set(String(item.id), item);
+          }
+        });
+      }
+    }
+  } catch (e) {
+    console.error("Erro ao carregar carrinho do localStorage:", e);
+  }
 
   var barra = document.getElementById("barra");
   var barraItens = document.getElementById("barra-itens");
@@ -18,6 +35,18 @@
   var totalEl = document.getElementById("total-carrinho");
   var estado = document.getElementById("estado-envio");
   var btnEnviar = document.getElementById("enviar");
+
+  function persistir() {
+    try {
+      var arr = [];
+      carrinho.forEach(function (item) {
+        arr.push(item);
+      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+    } catch (e) {
+      console.error("Erro ao salvar carrinho no localStorage:", e);
+    }
+  }
 
   function formatar(cents) {
     var inteiro = Math.floor(Math.abs(cents) / 100);
@@ -29,16 +58,19 @@
 
   function totais() {
     var itens = 0, total = 0;
-    carrinho.forEach(function (i) { itens += i.qtd; total += i.qtd * i.preco; });
+    carrinho.forEach(function (i) { 
+      itens += Number(i.qtd) || 0; 
+      total += (Number(i.qtd) || 0) * (Number(i.preco) || 0); 
+    });
     return { itens: itens, total: total };
   }
 
   function pintar() {
     var t = totais();
-    barraItens.textContent = t.itens === 1 ? "1 item" : t.itens + " itens";
-    barraTotal.textContent = formatar(t.total);
-    barra.classList.toggle("visivel", t.itens > 0);
-    totalEl.textContent = formatar(t.total);
+    if (barraItens) barraItens.textContent = t.itens === 1 ? "1 item" : t.itens + " itens";
+    if (barraTotal) barraTotal.textContent = formatar(t.total);
+    if (barra) barra.classList.toggle("visivel", t.itens > 0);
+    if (totalEl) totalEl.textContent = formatar(t.total);
 
     document.querySelectorAll(".produto").forEach(function (card) {
       var id = card.dataset.id;
@@ -46,6 +78,8 @@
       var valEl = card.querySelector("[data-valor]");
       if (valEl) valEl.textContent = item ? item.qtd : 0;
     });
+
+    if (!lista) return;
 
     lista.innerHTML = "";
     if (!carrinho.size) {
@@ -72,10 +106,10 @@
         formatar(item.qtd * item.preco) + "</div>";
       
       linha.querySelector('[data-linha="menos"]').onclick = function () {
-        mudar(item.id, -1);
+        window.mudar(item.id, -1);
       };
       linha.querySelector('[data-linha="mais"]').onclick = function () {
-        mudar(item.id, 1);
+        window.mudar(item.id, 1);
       };
       lista.appendChild(linha);
     });
@@ -90,12 +124,11 @@
   window.mudar = function (id, delta) {
     id = String(id);
     
-    // Tenta encontrar o elemento card correspondente para obter nome e preço se o item for novo
     var card = document.querySelector('.produto[data-id="' + id + '"]');
     var item = carrinho.get(id);
 
     if (!item) {
-      if (!card) return; // Se não existe card nem item, aborta
+      if (!card) return; 
       item = {
         id: id,
         nome: card.dataset.nome || "Produto",
@@ -112,6 +145,7 @@
       carrinho.set(id, item);
     }
 
+    persistir();
     totais();
     pintar();
   };
@@ -154,15 +188,34 @@
   });
 
   if (btnEnviar) {
-    btnEnviar.onclick = function () {
+    btnEnviar.onclick = function (e) {
+      if (e) e.preventDefault(); // Previne recarregamento de formulário indesejado
+
+      // Re-valida o carrinho diretamente do localStorage por segurança máxima
+      try {
+        var salvo = localStorage.getItem(STORAGE_KEY);
+        if (salvo) {
+          var arrSalvo = JSON.parse(salvo);
+          carrinho.clear();
+          if (Array.isArray(arrSalvo)) {
+            arrSalvo.forEach(function (item) {
+              if (item && item.id) carrinho.set(String(item.id), item);
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Erro ao reler localStorage no envio:", err);
+      }
+
       if (!carrinho.size) {
         alert("O carrinho está vazio.");
+        if (estado) estado.textContent = "O carrinho está vazio.";
         return;
       }
       
       var itens = [];
       carrinho.forEach(function (i) { 
-        itens.push({ id: Number(i.id), qty: i.qtd }); 
+        itens.push({ id: Number(i.id), qty: Number(i.qtd) }); 
       });
 
       btnEnviar.disabled = true;
@@ -177,7 +230,7 @@
         payment_method: valor("f-pagamento")
       };
 
-      fetch(cfg.endpointPedido, {
+      fetch(cfg.endpointPedido || "/api/pedido", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -197,7 +250,10 @@
         if (estado) {
           estado.textContent = "Pedido #" + (res.data.code || "") + " registado com sucesso no painel!";
         }
-        btnEnviar.disabled = true;
+        
+        // Limpa o carrinho e o localStorage apenas após o sucesso confirmado
+        carrinho.clear();
+        localStorage.removeItem(STORAGE_KEY);
 
         setTimeout(function() {
           location.reload();
