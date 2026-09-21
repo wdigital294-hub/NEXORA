@@ -1,166 +1,275 @@
-{% extends "base_public.html" %}
-{% block title %}{{ business.name }}{% endblock %}
-{% block head %}
-<meta name="description" content="{{ business.description or business.name }}">
-{% endblock %}
+/* Carrinho do catálogo público - Nexora Enterprise
+ * Versão blindada com persistência local e alinhamento total com o backend Python.
+ */
+(function () {
+  "use strict";
 
-{% macro cartao_produto(p) %}
-<article class="produto" data-id="{{ p.id }}" data-nome="{{ p.name }}" data-preco="{{ p.price_cents }}">
-  {% if p.image %}
-    <img class="produto-img" src="{{ url_for('public.uploaded_file', rel_path=p.image) }}" alt="{{ p.name }}" loading="lazy">
-  {% else %}
-    <div class="produto-img-vazia" aria-hidden="true">{{ p.name[0] | upper }}</div>
-  {% endif %}
-  <div class="produto-corpo">
-    <div class="produto-nome">{{ p.name }}</div>
-    {% if p.description %}<div class="produto-desc">{{ p.description }}</div>{% endif %}
-    <div class="produto-preco">{{ fmt_money(p.price_cents) }}</div>
-    
-    <!-- Controlo de Quantidade Blindado e Alinhado -->
-    <div class="qtd" style="margin-top:.55rem; display: flex; align-items: center; gap: 8px;">
-      <button type="button" data-acao="menos" aria-label="Retirar um {{ p.name }}" style="cursor: pointer; padding: 4px 10px;">−</button>
-      <span class="valor" data-valor style="font-weight: bold; min-width: 20px; text-align: center;">0</span>
-      <button type="button" data-acao="mais" aria-label="Juntar um {{ p.name }}" style="cursor: pointer; padding: 4px 10px;">+</button>
-    </div>
-  </div>
-</article>
-{% endmacro %}
+  var cfg = window.NEXORA || {};
+  var STORAGE_KEY = "nexora_carrinho_data";
 
-{% block body %}
-<header class="capa">
-  {% if business.cover %}
-    <img src="{{ url_for('public.uploaded_file', rel_path=business.cover) }}" alt="">
-  {% else %}
-    <div class="capa-vazia"></div>
-  {% endif %}
-</header>
+  // Inicializa o carrinho a partir do localStorage
+  var carrinho = new Map();
+  try {
+    var salvo = localStorage.getItem(STORAGE_KEY);
+    if (salvo) {
+      var arrSalvo = JSON.parse(salvo);
+      if (Array.isArray(arrSalvo)) {
+        arrSalvo.forEach(function (item) {
+          if (item && item.id) {
+            carrinho.set(String(item.id), item);
+          }
+        });
+      }
+    }
+  } catch (e) {
+    console.error("Erro ao carregar carrinho:", e);
+  }
 
-<div class="identidade">
-  {% if business.logo %}
-    <img class="logo" src="{{ url_for('public.uploaded_file', rel_path=business.logo) }}" alt="{{ business.name }}">
-  {% else %}
-    <div class="logo logo-vazio">{{ business.name[0] | upper }}</div>
-  {% endif %}
-  <h1 style="margin-top:.7rem">{{ business.name }}</h1>
-  {% if business.description %}<p class="mudo">{{ business.description }}</p>{% endif %}
-  <p class="pequeno mudo">
-    {% if business.opening_hours %}{{ business.opening_hours }}{% endif %}
-    {% if business.address %}<br>{{ business.address }}{% endif %}
-  </p>
-</div>
+  var barra = document.getElementById("barra");
+  var barraItens = document.getElementById("barra-itens");
+  var barraTotal = document.getElementById("barra-total");
+  var folha = document.getElementById("folha");
+  var lista = document.getElementById("lista-carrinho");
+  var totalEl = document.getElementById("total-carrinho");
+  var estado = document.getElementById("estado-envio");
+  var btnEnviar = document.getElementById("enviar");
 
-{% if categorias %}
-<div class="barra-categorias">
-  <div class="chips">
-    {% for c in categorias %}
-      {% if por_categoria[c.id] %}
-        <a class="chip" href="#cat-{{ c.id }}">{{ c.name }}</a>
-      {% endif %}
-    {% endfor %}
-    {% if sem_categoria %}<a class="chip" href="#cat-outros">Outros</a>{% endif %}
-  </div>
-</div>
-{% endif %}
+  function persistir() {
+    try {
+      var arr = [];
+      carrinho.forEach(function (item) { arr.push(item); });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+    } catch (e) {
+      console.error("Erro ao salvar carrinho:", e);
+    }
+  }
 
-<div class="catalogo">
-  {% if total_produtos == 0 %}
-    <div class="vazio">
-      <h3>Ainda não há produtos publicados</h3>
-      <p class="pequeno">Volte dentro de momentos.</p>
-    </div>
-  {% endif %}
+  function formatar(cents) {
+    var inteiro = Math.floor(Math.abs(cents) / 100);
+    var resto = Math.abs(cents) % 100;
+    var txt = inteiro.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    if (resto) txt += "," + String(resto).padStart(2, "0");
+    return txt + " " + (cfg.moeda || "Kz");
+  }
 
-  {% for c in categorias %}
-    {% if por_categoria[c.id] %}
-      <section id="cat-{{ c.id }}" style="scroll-margin-top:72px;margin-bottom:2rem">
-        <h2 style="margin:1.4rem 0 .8rem">{{ c.name }}</h2>
-        {% if c.description %}<p class="pequeno mudo">{{ c.description }}</p>{% endif %}
-        <div class="grelha-produtos">
-          {% for p in por_categoria[c.id] %}{{ cartao_produto(p) }}{% endfor %}
-        </div>
-      </section>
-    {% endif %}
-  {% endfor %}
+  function totais() {
+    var itens = 0, total = 0;
+    carrinho.forEach(function (i) { 
+      itens += Number(i.qtd) || 0; 
+      total += (Number(i.qtd) || 0) * (Number(i.preco) || 0); 
+    });
+    return { itens: itens, total: total };
+  }
 
-  {% if sem_categoria %}
-    <section id="cat-outros" style="scroll-margin-top:72px;margin-bottom:2rem">
-      <h2 style="margin:1.4rem 0 .8rem">Outros</h2>
-      <div class="grelha-produtos">
-        {% for p in sem_categoria %}{{ cartao_produto(p) }}{% endfor %}
-      </div>
-    </section>
-  {% endif %}
-</div>
+  function pintar() {
+    var t = totais();
+    if (barraItens) barraItens.textContent = t.itens === 1 ? "1 item" : t.itens + " itens";
+    if (barraTotal) barraTotal.textContent = formatar(t.total);
+    if (barra) barra.classList.toggle("visivel", t.itens > 0);
+    if (totalEl) totalEl.textContent = formatar(t.total);
 
-<!-- Barra fixa do carrinho -->
-<div class="barra-carrinho" id="barra">
-  <div class="interior">
-    <div>
-      <div class="pequeno" id="barra-itens">0 itens</div>
-      <strong id="barra-total">0 Kz</strong>
-    </div>
-    <button class="btn" type="button" id="abrir-carrinho">Ver pedido</button>
-  </div>
-</div>
+    document.querySelectorAll(".produto").forEach(function (card) {
+      var id = card.dataset.id;
+      var item = carrinho.get(id);
+      var valEl = card.querySelector("[data-valor]");
+      if (valEl) valEl.textContent = item ? item.qtd : 0;
+    });
 
-<!-- Folha do carrinho e finalização -->
-<div class="folha" id="folha" role="dialog" aria-modal="true" aria-label="O seu pedido">
-  <div class="folha-fundo" data-fechar></div>
-  <div class="folha-painel">
-    <div class="espaco">
-      <h2>O seu pedido</h2>
-      <button class="btn btn-linha btn-pq" type="button" data-fechar>Fechar</button>
-    </div>
+    if (!lista) return;
 
-    <div id="lista-carrinho"></div>
+    lista.innerHTML = "";
+    if (!carrinho.size) {
+      lista.innerHTML =
+        '<div class="vazio" style="padding:1.5rem"><strong>Carrinho vazio</strong>' +
+        '<div class="pequeno">Escolha produtos no catálogo para começar.</div></div>';
+      if (btnEnviar) btnEnviar.disabled = true;
+      return;
+    }
+    if (btnEnviar) btnEnviar.disabled = false;
 
-    <div class="total"><span>Total</span><span id="total-carrinho">0 Kz</span></div>
+    carrinho.forEach(function (item) {
+      var linha = document.createElement("div");
+      linha.className = "linha-carrinho";
+      linha.innerHTML =
+        '<div class="info"><div style="font-weight:600">' + escapar(item.nome) + "</div>" +
+        '<div class="pequeno mudo">' + formatar(item.preco) + " cada</div></div>" +
+        '<div class="qtd">' +
+        '<button type="button" data-linha="menos" aria-label="Retirar um">−</button>' +
+        '<span class="valor">' + item.qtd + "</span>" +
+        '<button type="button" data-linha="mais" aria-label="Juntar um">+</button>' +
+        "</div>" +
+        '<div style="font-weight:700;min-width:5.5rem;text-align:right">' +
+        formatar(item.qtd * item.preco) + "</div>";
+      
+      linha.querySelector('[data-linha="menos"]').onclick = function () {
+        window.mudar(item.id, -1);
+      };
+      linha.querySelector('[data-linha="mais"]').onclick = function () {
+        window.mudar(item.id, 1);
+      };
+      lista.appendChild(linha);
+    });
+  }
 
-    <div class="cartao stack" style="margin-top:.5rem">
-      <div class="campo">
-        <label for="f-nome">O seu nome</label>
-        <input id="f-nome" maxlength="80" autocomplete="name">
-      </div>
-      <div class="grelha-form">
-        <div class="campo">
-          <label for="f-mesa">Mesa (se estiver no local)</label>
-          <input id="f-mesa" maxlength="20" inputmode="numeric">
-        </div>
-        <div class="campo">
-          <label for="f-telefone">Telefone</label>
-          <input id="f-telefone" maxlength="30" inputmode="tel" autocomplete="tel">
-        </div>
-      </div>
-      {% if metodos %}
-      <div class="campo">
-        <label for="f-pagamento">Como vai pagar</label>
-        <select id="f-pagamento">
-          {% for m in metodos %}
-            <option value="{{ m.name }}">{{ m.name }}{% if m.details %} — {{ m.details }}{% endif %}</option>
-          {% endfor %}
-        </select>
-        <div class="ajuda">O pagamento é feito directamente ao estabelecimento.</div>
-      </div>
-      {% endif %}
-      <div class="campo">
-        <label for="f-obs">Observação</label>
-        <textarea id="f-obs" maxlength="400" style="min-height:70px"
-                  placeholder="Sem picante, embalar para levar..."></textarea>
-      </div>
-      <button class="btn btn-bloco" type="button" id="enviar">Enviar Pedido</button>
-      <div class="pequeno mudo centro" id="estado-envio"></div>
-    </div>
-  </div>
-</div>
-{% endblock %}
+  function escapar(s) {
+    var d = document.createElement("div");
+    d.textContent = s;
+    return d.innerHTML;
+  }
 
-{% block scripts %}
-<script>
-  window.NEXORA = {
-    endpointPedido: "{{ url_for('public.create_order', slug=business.slug) }}",
-    moeda: "Kz",
-    temWhatsapp: {{ 'true' if business.whatsapp else 'false' }}
+  window.mudar = function (id, delta) {
+    id = String(id);
+    var card = document.querySelector('.produto[data-id="' + id + '"]');
+    var item = carrinho.get(id);
+
+    if (!item) {
+      if (!card) return; 
+      item = {
+        id: id,
+        nome: card.dataset.nome || "Produto",
+        preco: Number(card.dataset.preco) || 0,
+        qtd: 0
+      };
+    }
+
+    item.qtd += delta;
+
+    if (item.qtd <= 0) {
+      carrinho.delete(id);
+    } else {
+      carrinho.set(id, item);
+    }
+
+    persistir();
+    totais();
+    pintar();
   };
-</script>
-<script src="{{ url_for('static', filename='js/cart.js') }}"></script>
-{% endblock %}
+
+  // Delegação de eventos para os botões do catálogo
+  document.addEventListener('click', function(event) {
+    var btnMais = event.target.closest('.btn-mais, [data-acao="mais"]');
+    var btnMenos = event.target.closest('.btn-menos, [data-acao="menos"]');
+    
+    if (btnMais) {
+      var card = btnMais.closest('.produto, [data-id]');
+      if (card) window.mudar(card.dataset.id || card.getAttribute('data-id'), 1);
+    }
+    if (btnMenos) {
+      var card = btnMenos.closest('.produto, [data-id]');
+      if (card) window.mudar(card.dataset.id || card.getAttribute('data-id'), -1);
+    }
+  });
+
+  var folhaElemento = document.getElementById("folha");
+  function abrir() { if (folhaElemento) { folhaElemento.classList.add("aberta"); document.body.style.overflow = "hidden"; } }
+  function fechar() { if (folhaElemento) { folhaElemento.classList.remove("aberta"); document.body.style.overflow = ""; } }
+
+  var btnAbrir = document.getElementById("abrir-carrinho");
+  if (btnAbrir) btnAbrir.onclick = abrir;
+  
+  if (folhaElemento) {
+    folhaElemento.querySelectorAll("[data-fechar]").forEach(function (el) { el.onclick = fechar; });
+  }
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && folhaElemento && folhaElemento.classList.contains("aberta")) fechar();
+  });
+
+  if (btnEnviar) {
+    btnEnviar.onclick = function (e) {
+      if (e) e.preventDefault();
+
+      try {
+        var salvo = localStorage.getItem(STORAGE_KEY);
+        if (salvo) {
+          var arrSalvo = JSON.parse(salvo);
+          carrinho.clear();
+          if (Array.isArray(arrSalvo)) {
+            arrSalvo.forEach(function (item) {
+              if (item && item.id) carrinho.set(String(item.id), item);
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Erro ao reler localStorage:", err);
+      }
+
+      if (!carrinho.size) {
+        alert("O carrinho está vazio.");
+        if (estado) estado.textContent = "O carrinho está vazio.";
+        return;
+      }
+      
+      var itens = [];
+      carrinho.forEach(function (i) { 
+        itens.push({ id: Number(i.id), qty: Number(i.qtd) }); 
+      });
+
+      btnEnviar.disabled = true;
+      if (estado) estado.textContent = "A registar o pedido...";
+
+      // Mapeamento exato exigido pelo public.py do Flask
+      var payload = {
+        items: itens,
+        customer_name: valor("f-nome"),
+        customer_phone: valor("f-telefone"),
+        table_number: valor("f-mesa"),
+        notes: valor("f-obs") || "",
+        payment_method: valor("f-pagamento")
+      };
+
+      // Resolução inteligente e autónoma do Endpoint do pedido
+      var endpoint = cfg.endpointPedido;
+      if (!endpoint) {
+        var partes = window.location.pathname.split('/');
+        var idx = partes.indexOf('menu');
+        if (idx !== -1 && partes[idx + 1]) {
+          endpoint = '/menu/' + partes[idx + 1] + '/pedido';
+        } else {
+          endpoint = window.location.pathname + '/pedido';
+        }
+      }
+
+      fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+      .then(function (res) {
+        return res.json().then(function (data) {
+          return { ok: res.ok, status: res.status, data: data };
+        });
+      })
+      .then(function (res) {
+        if (!res.ok || (res.data.ok === false)) {
+          if (estado) estado.textContent = res.data.error || "Não foi possível registar o pedido.";
+          btnEnviar.disabled = false;
+          return;
+        }
+
+        if (estado) {
+          estado.textContent = "Pedido #" + (res.data.code || "") + " registado com sucesso!";
+        }
+        
+        carrinho.clear();
+        localStorage.removeItem(STORAGE_KEY);
+
+        setTimeout(function() {
+          location.reload();
+        }, 2000);
+      })
+      .catch(function (err) {
+        console.error("Erro crítico no envio:", err);
+        if (estado) estado.textContent = "Erro de comunicação com o servidor. Tente novamente.";
+        btnEnviar.disabled = false;
+      });
+    };
+  }
+
+  function valor(id) {
+    var el = document.getElementById(id);
+    return el ? el.value.trim() : "";
+  }
+
+  pintar();
+})();
